@@ -9,8 +9,6 @@ function Cart() {
   const { cart, remove, add, decrease, clear } = CartStore();
   const { token } = AuthStore();
 
-  // Explicitly calculate totals in the component for guaranteed reactivity
-  // Added parseFloat(item.price || 0) to handle potential string prices like "two thousand"
   const totalAmount = cart.reduce((acc, item) => {
     const price = parseFloat(item.price);
     return acc + (isNaN(price) ? 0 : price * item.quantity);

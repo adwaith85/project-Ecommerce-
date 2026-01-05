@@ -3,6 +3,7 @@ import './Login.css'
 import Navbar from "../components/Navbar"
 import { useNavigate, Link } from "react-router-dom"
 import AuthStore from "../AuthStore"
+import api from "../Axios/Script"
 
 function Login() {
     const [name, setName] = useState("")
@@ -15,20 +16,14 @@ function Login() {
     const onClick = async () => {
         setError("") // Clear previous errors
         try {
-            let res = await fetch("http://localhost:8000/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    email: name,
-                    password: password
-                })
+            let res = await api.post("/login", {
+                email: name,
+                password: password
             });
 
-            let data = await res.json();
+            let data = await res.data;
 
-            if (res.ok && data.token) {
+            if (data.token) {
                 addToken(data.token)
                 alert("logined successfully")
                 navigate("/")

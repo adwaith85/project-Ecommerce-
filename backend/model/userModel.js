@@ -17,6 +17,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
     enum: ["Login", "Logout"],
     default: "Logout"
+  },
+  cart: {
+    type: Array,
+    default: []
   }
 }, { timestamps: true })
 

@@ -41,6 +41,8 @@ const CartStore = create(
 
       clear: () => set({ cart: [] }),
 
+      setCart: (cartItems) => set({ cart: cartItems }),
+
       getTotal: () => {
         return get().cart.reduce(
           (total, item) => total + item.price * item.quantity,

@@ -3,6 +3,7 @@ import './Register.css'
 import { useForm } from "react-hook-form";
 import Navbar from "../components/Navbar";
 import { Link, useNavigate } from "react-router-dom";
+import api from "../Axios/Script";
 
 function Register() {
   const {
@@ -23,28 +24,20 @@ function Register() {
     setSuccessMessage("");
 
     try {
-      const res = await fetch("http://localhost:8000/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+      const res = await api.post("/register", {
+        name: data.name,
+        email: data.email,
+        number: data.number,
+        password: data.password,
       });
-
-      const result = await res.json();
-
-      if (res.ok) {
-        setSuccessMessage("Registration successful! Redirecting to login...");
-        reset();
-        setTimeout(() => {
-          navigate("/login");
-        }, 2000);
-      } else {
-        setServerError(result.error || "Registration failed. Please try again.");
-      }
+      setSuccessMessage("Registration successful! Redirecting to login...");
+      reset();
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
     } catch (err) {
-      console.error("Error:", err);
-      setServerError("Something went wrong. Please check your connection.");
+      console.error("Error:", err.response.data);
+      setServerError("Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -100,7 +93,7 @@ function Register() {
             </div>
 
             <div className="input-group">
-              <label>Email Address</label>
+              <label>Email</label>
               <div className="input-wrapper">
                 <input
                   className="register-input"

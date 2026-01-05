@@ -10,12 +10,12 @@ export const category = async (req, res) => {
 export const addcategory = async (req, res) => {
     try {
         const { name, image } = req.body
-
         console.log(name, image)
         const newcategory = await Category.create({ name, image })
-        res.json(newcategory)
+        res.status(201).json(newcategory)
     } catch (err) {
-        res.json({ messege: "error" })
+        console.error(err)
+        res.status(500).json({ message: "Error creating category" })
     }
 }
 

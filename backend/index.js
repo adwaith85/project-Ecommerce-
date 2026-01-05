@@ -24,7 +24,10 @@ mongoose
     .catch((err) => console.log("DB Connection Error:", err));
 
 app.use(express.json())
-app.use(cors())
+app.use(cors({
+    origin: "http://localhost:5173",
+    credentials: true
+}))
 app.use('/uploads', express.static('uploads'));
 
 const items = []

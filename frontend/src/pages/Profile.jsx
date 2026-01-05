@@ -2,10 +2,10 @@ import React, { useEffect, useState, useRef } from 'react';
 import './Profile.css';
 import Navbar from '../components/Navbar';
 import AuthStore from '../AuthStore';
+import api from '../Axios/Script';
 
 function Profile() {
     const [user, setUser] = useState({});
-    const [orderCount, setOrderCount] = useState(0);
     const [isEditingDetails, setIsEditingDetails] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
@@ -15,41 +15,25 @@ function Profile() {
     const [imagePreview, setImagePreview] = useState(null);
     const fileInputRef = useRef(null);
 
-    // const getToken = () => {
-    const { token } = AuthStore()
+    const { token } = AuthStore();
 
     const getData = async () => {
-        // const token = getToken();
-        // if (!token) return;
-
+        if (!token) return;
         try {
-            const userRes = await fetch("http://localhost:8000/getUser", {
-                method: "GET",
+            const userRes = await api.get("/getUser", {
                 headers: {
-                    Authorization: `Bearer ${token}`, // Content-Type not required for GET
+                    Authorization: `Bearer ${token}`,
                 },
             });
-            // console.log(userRes)
-            const userData = await userRes.json();
+            const userData = userRes.data;
             setUser(userData);
             setFormData({
                 name: userData.name || '',
                 number: userData.number || ''
             });
-
-            // const orderRes = await fetch("http://localhost:8000/order/count", {
-            //     method: "GET",
-            //     headers: {
-            //         "Content-Type": "application/json",
-            //         "Authorization": `Bearer ${token}`,
-            //     }
-            // });
-            // const orderData = await orderRes.json();
-            // console.log(orderData)
-            // setOrderCount(orderData.count || 0);
-
         } catch (err) {
-            console.error(err);
+            console.error("Error fetching user data:", err);
+            // Optional: Handle token expiration or auth errors here
         }
     };
 
@@ -64,87 +48,56 @@ function Profile() {
     const handleSaveImage = async () => {
         if (!selectedImage) return;
 
-        // const token = AuthStore();
         const data = new FormData();
         data.append('profileImage', selectedImage);
         if (user.name) data.append('name', user.name);
         if (user.number) data.append('number', user.number);
 
         try {
-            const res = await fetch("http://localhost:8000/updateUser", {
-                method: "PUT",
+            const res = await api.put("/updateUser", data, {
                 headers: {
-                    "Authorization": `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data', // Axios usually sets this auto for FormData, but good to be explicit or let it handle
                 },
-                body: data
             });
 
-            const contentType = res.headers.get("content-type");
-            if (res.ok) {
-                const updatedUser = await res.json();
-                setUser(updatedUser);
-                setSelectedImage(null);
-                setImagePreview(null);
-                alert("Profile image updated!");
-            } else {
-                let errorMessage = res.statusText;
-                if (contentType && contentType.includes("application/json")) {
-                    const errorData = await res.json();
-                    errorMessage = errorData.error || errorData.message || errorMessage;
-                    console.error("Update image failed:", errorData);
-                } else {
-                    const errorText = await res.text();
-                    console.error("Update image failed (non-JSON):", errorText);
-                }
-                alert(`Failed to update image: ${errorMessage}`);
-            }
+            // Axios treats 2xx as success, throws on 4xx/5xx
+            const updatedUser = res.data;
+            setUser(updatedUser);
+            setSelectedImage(null);
+            setImagePreview(null);
+            alert("Profile image updated successfully!");
+
         } catch (err) {
             console.error("Update image error:", err);
-            alert("Error updating image. Check console for details.");
+            const errorMessage = err.response?.data?.message || err.response?.data?.error || "Failed to update image.";
+            alert(errorMessage);
         }
     };
 
     const handleSaveDetails = async () => {
-        // const token = AuthStore();
         if (!token) return;
-
         const data = new FormData();
         data.append('name', formData.name);
         data.append('number', formData.number);
-
         try {
-            const res = await fetch("http://localhost:8000/updateUser", {
-                method: "PUT",
+            const res = await api.put("/updateUser", data, {
                 headers: {
                     "Authorization": `Bearer ${token}`,
                 },
-                body: data
             });
 
-            const contentType = res.headers.get("content-type");
-            if (res.ok) {
-                const updatedUser = await res.json();
-                setUser(updatedUser);
-                setIsEditingDetails(false);
-                alert("Profile details updated!");
-            } else {
-                let errorMessage = res.statusText;
-                if (contentType && contentType.includes("application/json")) {
-                    const errorData = await res.json();
-                    errorMessage = errorData.error || errorData.message || errorMessage;
-                    console.error("Update details failed:", errorData);
-                } else {
-                    const errorText = await res.text();
-                    console.error("Update details failed (non-JSON):", errorText);
-                }
-                alert(`Failed to update details: ${errorMessage}`);
-            }
+            const updatedUser = res.data;
+            setUser(updatedUser);
+            setIsEditingDetails(false);
+            alert("Profile details updated successfully!");
+
         } catch (err) {
             console.error("Update details error:", err);
-            alert("Error updating details.");
+            const errorMessage = err.response?.data?.message || err.response?.data?.error || "Failed to update details.";
+            alert(errorMessage);
         }
     };
-    console.log(user.profileImage)
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -152,59 +105,62 @@ function Profile() {
 
     useEffect(() => {
         getData();
-    }, []);
+    }, [token]); // Add token as dependency
 
     return (
         <>
             <Navbar />
             <div className="profile-container">
                 <div className="profile-card">
-
-                    {/* Image Section */}
+                    {/* Header / Image Section */}
                     <div className="profile-header">
-                        <div className="image-wrapper">
-                            <img
-                                src={imagePreview || user?.profileImage || "https://placehold.co/150"}
-                                alt="Profile"
-                                className="profile-image"
-                            />
-                            <div className="image-overlay" onClick={() => fileInputRef.current.click()}>
-                                <span>Change</span>
+                        <div className="image-container">
+                            <div className="image-wrapper" onClick={() => fileInputRef.current.click()}>
+                                <img
+                                    src={imagePreview || user?.profileImage || "https://placehold.co/150"}
+                                    alt="Profile"
+                                    className="profile-image"
+                                />
+                                <div className="image-overlay">
+                                    <span>Edit</span>
+                                </div>
                             </div>
                             <input
                                 type="file"
                                 ref={fileInputRef}
                                 onChange={handleImageChange}
-                                style={{ display: 'none' }}
+                                hidden
                                 accept="image/*"
                             />
                         </div>
+
                         {selectedImage && (
                             <div className="image-actions">
-                                <button className="btn-confirm-img" onClick={handleSaveImage}>Upload New Photo</button>
-                                <button className="btn-cancel-img" onClick={() => {
+                                <button className="btn-confirm" onClick={handleSaveImage}>Save</button>
+                                <button className="btn-cancel" onClick={() => {
                                     setSelectedImage(null);
                                     setImagePreview(null);
                                 }}>Cancel</button>
                             </div>
                         )}
-                        <h2>{user.name}</h2>
-                        <p className="profile-email">{user.email}</p>
+
+                        <h2 className="profile-name">{user.name || "User Name"}</h2>
+                        <p className="profile-email">{user.email || "email@example.com"}</p>
                     </div>
 
-                    <div className="profile-main-content">
-                        {/* Details Section */}
-                        <div className="details-header">
-                            <h3>Personal Details</h3>
+                    {/* Content Section */}
+                    <div className="profile-body">
+                        <div className="section-header">
+                            <h3>Account Details</h3>
                             {!isEditingDetails && (
-                                <button className="btn-edit-details" onClick={() => setIsEditingDetails(true)}>
-                                    Edit Details
+                                <button className="btn-edit" onClick={() => setIsEditingDetails(true)}>
+                                    Edit Profile
                                 </button>
                             )}
                         </div>
 
-                        <div className="profile-details">
-                            <div className="detail-item">
+                        <div className="details-grid">
+                            <div className="form-group">
                                 <label>Full Name</label>
                                 {isEditingDetails ? (
                                     <input
@@ -212,14 +168,15 @@ function Profile() {
                                         name="name"
                                         value={formData.name}
                                         onChange={handleChange}
-                                        className="profile-input"
+                                        className="form-input"
+                                        placeholder="Enter your name"
                                     />
                                 ) : (
-                                    <span className="detail-value">{user.name}</span>
+                                    <div className="info-display">{user.name || "-"}</div>
                                 )}
                             </div>
 
-                            <div className="detail-item">
+                            <div className="form-group">
                                 <label>Phone Number</label>
                                 {isEditingDetails ? (
                                     <input
@@ -227,32 +184,32 @@ function Profile() {
                                         name="number"
                                         value={formData.number}
                                         onChange={handleChange}
-                                        className="profile-input"
+                                        className="form-input"
+                                        placeholder="Enter phone number"
                                     />
                                 ) : (
-                                    <span className="detail-value">{user.number}</span>
+                                    <div className="info-display">{user.number || "-"}</div>
                                 )}
                             </div>
 
-                            <div className="detail-item non-editable">
-                                <label>Email</label>
-                                <span className="detail-value locked">{user.email}</span>
+                            <div className="form-group full-width">
+                                <label>Email Address</label>
+                                <div className="info-display locked">{user.email}</div>
                             </div>
                         </div>
 
                         {isEditingDetails && (
-                            <div className="edit-actions">
+                            <div className="action-buttons">
                                 <button className="btn-save" onClick={handleSaveDetails}>Save Changes</button>
-                                <button className="btn-cancel" onClick={() => setIsEditingDetails(false)}>Cancel</button>
+                                <button className="btn-discard" onClick={() => {
+                                    setIsEditingDetails(false);
+                                    setFormData({
+                                        name: user.name || '',
+                                        number: user.number || ''
+                                    });
+                                }}>Cancel</button>
                             </div>
                         )}
-
-                        {/* <div className="stats-section">
-                            <div className="stat-card">
-                                <h4>Total Orders</h4>
-                                <span className="stat-value">{orderCount}</span>
-                            </div>
-                        </div> */}
                     </div>
                 </div>
             </div>

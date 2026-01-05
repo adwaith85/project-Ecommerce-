@@ -11,53 +11,71 @@ import Carousel from 'react-bootstrap/Carousel';
 
 import AuthStore from "../AuthStore";
 import CartStore from "../store";
+import api from "../Axios/Script";
 
 function Home() {
   const [data, SetData] = useState([]);
-  const [cart, setCart] = useState([]); // initialize as empty array
   const [searchItem, SetSearchItem] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
 
   const navigate = useNavigate();
   const { token } = AuthStore();
 
-  const getData = async () => {
-    if (!token) return;
+   const getData = async () => {
+  if (!token) return;
 
-    try {
-      let url = `http://localhost:8000/products?search=${searchItem}`;
-      if (selectedCategory) {
-        url += `&category=${selectedCategory}`;
-      }
+  try {
+    const params = {
+      search: searchItem,
+    };
 
-      let res = await fetch(url, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
-          navigate("/login");
-        }
-        return;
-      }
-
-      let data = await res.json();
-      SetData(data);
-    } catch (error) {
-      console.error("Failed to fetch products:", error);
+    if (selectedCategory) {
+      params.category = selectedCategory;
     }
-  };
 
-  const additem = (item) => {
-    setCart((prev) => [...prev, item]);
+    const res = await api.get("/products", {
+      params,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    SetData(res.data);
+  } catch (error) {
+    console.error("Failed to fetch products:", error);
+
+    if (error.response) {
+      if (error.response.status === 401 || error.response.status === 403) {
+        navigate("/login");
+      }
+    }
+  }
+};
+
+
+  const { setCart: setStoreCart } = CartStore();
+
+  const fetchUserCart = async () => {
+    if (!token) return;
+    try {
+      const res = await api.get("/getUser", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const userData = await res.json();
+        if (userData.cart && userData.cart.length > 0) {
+          setStoreCart(userData.cart);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch user cart:", error);
+    }
   };
 
   useEffect(() => {
     if (token) {
       getData();
+      fetchUserCart();
     }
   }, [searchItem, token, selectedCategory]);
 
@@ -85,7 +103,6 @@ function Home() {
                     data.map((item) => (
                       <Detail
                         key={item._id}
-                        additem={additem}
                         image={item.image}
                         name={item.name}
                         price={item.price}
@@ -176,7 +193,7 @@ function HomeCarousel() {
         <Carousel.Item>
           <img
             className="d-block w-100 carousel-item-img"
-            src="https://images.unsplash.com/photo-1556742049-0cfed4f7a07d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
+            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRTQN1IK9aX4wLedhAaCoblfXKooPAQVcOpA&s"
             alt="Third slide"
           />
           <Carousel.Caption className="carousel-caption-custom">
@@ -249,15 +266,13 @@ function CateOption({ token, selectedCategory, setSelectedCategory }) {
 
   const getCategory = async () => {
     try {
-      let res = await fetch("http://localhost:8000/category", {
-        method: "GET",
+      let res = await api.get("/category", {
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          Authorization: `Bearer ${token}`
         },
       });
-      if (!res.ok) return;
-      let data = await res.json();
+      // if (!res.ok) return;
+      let data = await res.data;
       setCategorylist(data);
     } catch (error) {
       console.error("Failed to fetch categories:", error);

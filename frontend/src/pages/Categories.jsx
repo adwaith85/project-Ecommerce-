@@ -4,6 +4,7 @@ import Navbar from "../components/Navbar"
 import AuthStore from "../AuthStore"
 import CartStore from "../store"
 import { Navigate } from "react-router-dom"
+import api from "../Axios/Script"
 
 function Categories() {
     const [categoryList, setCategoryList] = useState([]);
@@ -17,10 +18,10 @@ function Categories() {
     // Fetch Categories
     const getCategories = async () => {
         try {
-            const res = await fetch("http://localhost:8000/category", {
+            const res = await api.get("/category", {
                 headers: { "Authorization": `Bearer ${token}` }
             });
-            const data = await res.json();
+            const data = res.data;
             setCategoryList(data);
         } catch (error) {
             console.error("Error fetching categories:", error);
@@ -31,13 +32,13 @@ function Categories() {
     const getProducts = async (catId) => {
         setLoading(true);
         try {
-            let url = "http://localhost:8000/products";
+            let url = "/products";
             if (catId) url += `?category=${catId}`;
 
-            const res = await fetch(url, {
+            const res = await api.get(url, {
                 headers: { "Authorization": `Bearer ${token}` }
             });
-            const data = await res.json();
+            const data = res.data;
             setProducts(data);
         } catch (error) {
             console.error("Error fetching products:", error);

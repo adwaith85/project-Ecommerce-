@@ -9,16 +9,47 @@ import NavDropdown from 'react-bootstrap/NavDropdown';
 import { useLocation } from 'react-router-dom';
 import { useEffect, useState } from "react";
 import NavLink from "./NavLink";
-
+import api from "../Axios/Script";
 import AuthStore from "../AuthStore";
 import CartStore from "../store";
 
 function Header({ SetSearchItem }) {
   const { removeToken, token } = AuthStore()
-  const { clear } = CartStore()
+  const { clear, cart } = CartStore()
   const location = useLocation()
 
-  const handleLogout = () => {
+  const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
+
+  useEffect(() => {
+    const syncCart = async () => {
+      if (token && cart.length >= 0) {
+        try {
+          await api.post("/saveCart", { cart }, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+        } catch (error) {
+          console.error("Cart sync failed:", error);
+        }
+      }
+    };
+
+    // Debounce syncing to avoid too many requests
+    const timeout = setTimeout(syncCart, 1000);
+    return () => clearTimeout(timeout);
+  }, [cart, token]);
+
+  const handleLogout = async () => {
+    try {
+      await api.post("/logout", { cart }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
     removeToken();
     clear();
   };
@@ -39,7 +70,10 @@ function Header({ SetSearchItem }) {
             <Nav.Link as={Link} to="/Categories" className="nav-link">Categories</Nav.Link>
             {token && (
               <>
-                <Nav.Link as={Link} to="/cart" className="nav-link">Cart</Nav.Link>
+                <Nav.Link as={Link} to="/cart" className="nav-link cart-link">
+                  Cart
+                  {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+                </Nav.Link>
                 <Nav.Link as={Link} to="/order" className="nav-link">Orders</Nav.Link>
                 <Nav.Link as={Link} to="/profile" className="nav-link">Profile</Nav.Link>
                 <Nav.Link as={Link} to="/admin" className="nav-link">Admin</Nav.Link>

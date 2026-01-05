@@ -3,6 +3,7 @@ import './Admin.css'
 import AuthStore from "../AuthStore"
 import { Link, Navigate } from "react-router-dom"
 import React from 'react';
+import api from "../Axios/Script";
 
 function Admin() {
   const { token } = AuthStore()
@@ -29,42 +30,42 @@ function Admin() {
   // API Callers
   const fetchAllOrders = async () => {
     try {
-      const res = await fetch("http://localhost:8000/admin/orders", {
+      const res = await api.get("/admin/orders", {
         headers: { "Authorization": `Bearer ${token}` }
       })
-      const data = await res.json()
+      const data = res.data
       setOrders(Array.isArray(data) ? data : [])
     } catch (e) { console.error(e) }
   }
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch("http://localhost:8000/category", {
+      const res = await api.get("/category", {
         headers: { "Authorization": `Bearer ${token}` }
       })
-      const data = await res.json()
+      const data = res.data
       setCategories(Array.isArray(data) ? data : [])
     } catch (e) { console.error(e) }
   }
 
   const fetchProducts = async (filteredCatId = null) => {
     try {
-      let url = "http://localhost:8000/products"
+      let url = "/products"
       if (filteredCatId) url += `?category=${filteredCatId}`
-      const res = await fetch(url, {
+      const res = await api.get(url, {
         headers: { "Authorization": `Bearer ${token}` }
       })
-      const data = await res.json()
+      const data = res.data
       setProducts(Array.isArray(data) ? data : [])
     } catch (e) { console.error(e) }
   }
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch("http://localhost:8000/admin/users", {
+      const res = await api.get("/admin/users", {
         headers: { "Authorization": `Bearer ${token}` }
       })
-      const data = await res.json()
+      const data = res.data
       setUsers(Array.isArray(data) ? data : [])
     } catch (e) { console.error(e) }
   }
@@ -90,21 +91,23 @@ function Admin() {
     if (!name || !price || !catId) return alert("Fill all product fields")
     setLoading(true)
     try {
-      const method = editingId ? "PUT" : "POST"
-      const url = editingId ? `http://localhost:8000/products/${editingId}` : "http://localhost:8000/products"
+      const url = editingId ? `/products/${editingId}` : "/products"
+      const data = { name, price, image, category: catId }
+      const headers = { "Authorization": `Bearer ${token}` }
 
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ name, price, image, category: catId })
-      })
+      const res = editingId
+        ? await api.put(url, data, { headers })
+        : await api.post(url, data, { headers })
 
-      if (res.ok) {
+      if (res.status === 201 || res.status === 200) {
         alert(editingId ? "Product Updated!" : "Product Created!")
         resetForm()
         fetchProducts(selectedCategory)
       }
-    } catch (e) { console.error(e) }
+    } catch (e) {
+      console.error(e)
+      alert("Error: " + (e.response?.data?.message || e.message))
+    }
     finally { setLoading(false) }
   }
 
@@ -112,29 +115,30 @@ function Admin() {
     if (!name) return alert("Category name required")
     setLoading(true)
     try {
-      const method = editingId ? "PUT" : "POST"
-      const url = editingId ? `http://localhost:8000/category/${editingId}` : "http://localhost:8000/category"
+      const url = editingId ? `/category/${editingId}` : "/category"
+      const data = { name, image }
+      const headers = { "Authorization": `Bearer ${token}` }
 
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ name, image })
-      })
+      const res = editingId
+        ? await api.put(url, data, { headers })
+        : await api.post(url, data, { headers })
 
-      if (res.ok) {
+      if (res.status === 201 || res.status === 200) {
         alert(editingId ? "Category Updated!" : "Category Created!")
         resetForm()
         fetchCategories()
       }
-    } catch (e) { console.error(e) }
+    } catch (e) {
+      console.error(e)
+      alert("Error: " + (e.response?.data?.message || e.message))
+    }
     finally { setLoading(false) }
   }
 
   const handleDeleteCategory = async (id) => {
     if (!window.confirm("Delete this category?")) return
     try {
-      await fetch(`http://localhost:8000/category/${id}`, {
-        method: "DELETE",
+      await api.delete(`/category/${id}`, {
         headers: { "Authorization": `Bearer ${token}` }
       })
       fetchCategories()
@@ -144,8 +148,7 @@ function Admin() {
   const handleDeleteProduct = async (id) => {
     if (!window.confirm("Delete this product?")) return
     try {
-      await fetch(`http://localhost:8000/products/${id}`, {
-        method: "DELETE",
+      await api.delete(`/products/${id}`, {
         headers: { "Authorization": `Bearer ${token}` }
       })
       fetchProducts(selectedCategory)
@@ -155,8 +158,7 @@ function Admin() {
   const handleDeleteUser = async (id) => {
     if (!window.confirm("Delete this user?")) return
     try {
-      await fetch(`http://localhost:8000/admin/users/${id}`, {
-        method: "DELETE",
+      await api.delete(`/admin/users/${id}`, {
         headers: { "Authorization": `Bearer ${token}` }
       })
       fetchUsers()

@@ -5,6 +5,7 @@ import CartStore from "../store";
 import { useForm } from "react-hook-form";
 import AuthStore from "../AuthStore";
 import Header from "./Navbar";
+import api from "../Axios/Script";
 
 function Checkout() {
     const { token } = AuthStore()
@@ -36,25 +37,25 @@ function Checkout() {
 
     const Upload = async (data) => {
         try {
-            let res = await fetch("http://localhost:8000/order", {
-                method: "POST",
+            const orderData = {
+                name: data.name,
+                address: data.address,
+                district: data.district,
+                pincode: data.pincode,
+                number: data.number,
+                orderItems: cart.map(item => ({
+                    pid: item.id,
+                    qty: item.quantity
+                })),
+            };
+
+            const res = await api.post("/order", orderData, {
                 headers: {
-                    "content-type": "application/JSON",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({
-                    name: data.name,
-                    address: data.address,
-                    district: data.district,
-                    pincode: data.pincode,
-                    number: data.number,
-                    orderItems: cart.map(item => ({
-                        pid: item.id,
-                        qty: item.quantity
-                    })),
-                }),
             });
-            if (res.ok) {
+
+            if (res.status === 201) {
                 reset();
                 clear();
                 alert("Order placed successfully!");
@@ -64,7 +65,7 @@ function Checkout() {
             }
         } catch (err) {
             console.error(err);
-            alert("An error occurred while placing your order.");
+            alert("Error: " + (err.response?.data?.error || err.message));
         }
     };
 

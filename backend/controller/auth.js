@@ -30,6 +30,9 @@ export const login = async (req, res) => {
         if (isMatch) {
             const token = jwt.sign({ email: user.email, role: user.role }, 'qwerty', { expiresIn: '24h' });
 
+            // Ensure only one user is "Login" at a time by logging out others
+            await Usermodel.updateMany({ email: { $ne: email } }, { status: "Logout" });
+
             // Update status to Login
             user.status = "Login";
             await user.save();
@@ -138,14 +141,33 @@ export const deleteUser = async (req, res) => {
 
 export const logout = async (req, res) => {
     try {
+        const { cart } = req.body;
         const user = await Usermodel.findOne({ email: req.user.email });
         if (user) {
             user.status = "Logout";
+            if (cart) user.cart = cart;
             await user.save();
         }
         res.status(200).json({ message: "Logout successful" });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Logout failed" });
+    }
+}
+
+export const saveCart = async (req, res) => {
+    try {
+        const { cart } = req.body;
+        const user = await Usermodel.findOne({ email: req.user.email });
+        if (user) {
+            user.cart = cart;
+            await user.save();
+            res.status(200).json({ message: "Cart saved" });
+        } else {
+            res.status(404).json({ error: "User not found" });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to save cart" });
     }
 }

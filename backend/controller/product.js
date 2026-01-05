@@ -40,14 +40,15 @@ export const item = async (req, res) => {
     }
 }
 
-export const itemadd = (req, res) => {
-    const { name, image, price, category } = req.body
-    // console.log(name, image, price)
-
-    Product.create({ name, image, price, category })
-
-    res.send("ok created")
-
+export const itemadd = async (req, res) => {
+    try {
+        const { name, image, price, category } = req.body
+        await Product.create({ name, image, price, category })
+        res.status(201).send("ok created")
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ error: "Failed to create product" })
+    }
 }
 
 export const deleteitem = async (req, res) => {

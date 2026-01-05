@@ -3,12 +3,10 @@ import '../pages/Home.css'
 import { useParams } from "react-router-dom";
 import Card from 'react-bootstrap/Card';
 import ListGroup from 'react-bootstrap/ListGroup';
-// import Container from 'react-bootstrap/Container';
-// import Row from 'react-bootstrap/Row';
-// import Col from 'react-bootstrap/Col';
 import Header from "./Navbar";
 import { CateOption } from "../pages/home";
 import AuthStore from "../AuthStore";
+import api from "../Axios/Script";
 
 function DisplayCategory() {
 
@@ -16,13 +14,12 @@ function DisplayCategory() {
     const { token } = AuthStore()
     const [cateItems, setcateItems] = useState([])
     const getcateItems = async () => {
-        let res = await fetch(`http://localhost:8000/cateItem/${name}`, {
-            method: "GET",
+        let res = await api.get(`/cateItem/${name}`, {
             headers: {
-                "Content-Type": "application/JSON"
+                Authorization: `Bearer ${token}`
             },
         })
-        let data = await res.json()
+        let data = await res.data
         setcateItems(data)
     }
 

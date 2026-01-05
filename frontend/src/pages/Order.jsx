@@ -3,23 +3,24 @@ import './Order.css'
 import AuthStore from "../AuthStore"
 import Header from "../components/Navbar"
 import { Link } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
+import api from "../Axios/Script"
 
 function Order() {
   const { token } = AuthStore()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
 
   const fetchOrders = async () => {
     try {
-      let res = await fetch("http://localhost:8000/order", {
-        method: "GET",
+      let res = await api.get("/order", {
         headers: {
-          "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
       })
 
-      let data = await res.json()
+      let data = res.data
       // Sort orders by date (newest first)
       if (Array.isArray(data)) {
         setOrders(data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)))
@@ -34,6 +35,8 @@ function Order() {
   useEffect(() => {
     if (token) {
       fetchOrders()
+    }else{
+      navigate('/login')
     }
   }, [token])
 
