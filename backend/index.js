@@ -25,7 +25,7 @@ mongoose
 
 app.use(express.json())
 app.use(cors({
-    origin: "https://project-ecommerce-kohl.vercel.app/",
+    origin: "https://project-ecommerce-kohl.vercel.app",
     credentials: true
 }))
 app.use('/uploads', express.static('uploads'));
