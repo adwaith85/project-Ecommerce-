@@ -60,6 +60,9 @@ const orderSchema = new mongoose.Schema({
     },
     deliveredAt: {
         type: Date
+    },
+    cf_order_id: {
+        type: String
     }
 
 }, { timestamps: true });

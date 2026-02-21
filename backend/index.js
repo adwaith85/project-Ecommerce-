@@ -11,6 +11,7 @@ import AuthROute from "./route/auth.js"
 import cateItemROute from "./route/cateItem.js"
 
 import OrderRouter from "./route/order.js"
+import PaymentRoute from "./route/payment.js"
 
 dotenv.config()
 const MONGO_URL = process.env.MONGO_URL || "mongodb://localhost:27017/ecommerce"
@@ -30,13 +31,11 @@ app.use('/uploads', express.static('uploads'));
 const items = []
 
 app.use(ProductRoute)
-
 app.use(AuthROute)
-
 app.use(CategoryROute)
-
 app.use(cateItemROute)
 app.use(OrderRouter)
+app.use(PaymentRoute)
 
 // Error handler to return JSON instead of HTML
 app.use((err, req, res, next) => {
