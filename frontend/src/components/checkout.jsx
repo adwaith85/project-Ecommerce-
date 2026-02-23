@@ -57,9 +57,16 @@ function Checkout() {
 
             if (res.status === 201) {
                 reset();
-                clear();
-                alert("Order placed successfully!");
-                navigate("/");
+                // We don't clear cart here because we need it for the summary on the payment page
+                // Or we can pass the summary in state
+                const orderId = res.data._id;
+                navigate("/payment", {
+                    state: {
+                        orderId: orderId,
+                        summary: cart,
+                        totalAmount: totalAmount
+                    }
+                });
             } else {
                 alert("Failed to place order. Please try again.");
             }

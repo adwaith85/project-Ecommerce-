@@ -11,6 +11,7 @@ import DisplayCategory from "./components/cate-items";
 import Checkout from "./components/checkout";
 import Order from "./pages/Order";
 import Profile from "./pages/Profile";
+import Payment from "./pages/payment";
 
 function CustomRoute() {
 
@@ -28,6 +29,7 @@ function CustomRoute() {
                 <Route path="/Categories" element={<Categories />} />
                 <Route path="/Categories/:name" element={<DisplayCategory />} />
                 <Route path="/checkout" element={<Checkout />} />
+                <Route path="/payment" element={<Payment />} />
                 <Route path="/Order" element={<Order />} />
                 <Route path="/profile" element={<Profile />} />
             </Routes>
